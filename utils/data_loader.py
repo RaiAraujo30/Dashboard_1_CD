@@ -15,9 +15,65 @@ def carregar_dados(base_path='data'):
     Returns:
         pd.DataFrame: DataFrame com dados unificados de produtos e estoque
     """
-    # Caminhos dos arquivos
-    caminho_produtos = os.path.join(base_path, 'FCD_PRODUTOS.csv')
-    caminho_estoque = os.path.join(base_path, 'FCD_ESTOQUE.csv')
+    # Obter o diretório do script atual
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)  # Volta um nível para a raiz do projeto
+    
+    # Caminhos dos arquivos - tentar diferentes localizações
+    # Streamlit Cloud geralmente roda na raiz do projeto
+    caminhos_possiveis_produtos = [
+        os.path.join(project_root, base_path, 'FCD_PRODUTOS.csv'),  # Raiz do projeto/data/
+        os.path.join(base_path, 'FCD_PRODUTOS.csv'),  # Relativo ao diretório atual
+        'data/FCD_PRODUTOS.csv',  # Relativo simples
+        './data/FCD_PRODUTOS.csv',  # Relativo com ./
+        os.path.join(os.getcwd(), base_path, 'FCD_PRODUTOS.csv'),  # Diretório de trabalho atual
+    ]
+    
+    caminho_produtos = None
+    caminho_estoque = None
+    
+    # Encontrar o arquivo de produtos
+    for caminho in caminhos_possiveis_produtos:
+        if os.path.exists(caminho):
+            caminho_produtos = caminho
+            # Encontrar o arquivo de estoque no mesmo diretório
+            dir_estoque = os.path.dirname(caminho)
+            caminho_estoque = os.path.join(dir_estoque, 'FCD_ESTOQUE.csv')
+            if os.path.exists(caminho_estoque):
+                break
+            else:
+                caminho_produtos = None
+                caminho_estoque = None
+    
+    # Se não encontrou, tentar com caminho relativo direto
+    if caminho_produtos is None:
+        caminho_produtos = os.path.join(base_path, 'FCD_PRODUTOS.csv')
+        caminho_estoque = os.path.join(base_path, 'FCD_ESTOQUE.csv')
+    
+    # Verificar se os arquivos existem
+    if not os.path.exists(caminho_produtos):
+        # Informações de debug
+        debug_info = (
+            f"Diretório atual: {os.getcwd()}\n"
+            f"Diretório do script: {script_dir}\n"
+            f"Raiz do projeto: {project_root}\n"
+            f"Caminhos tentados: {caminhos_possiveis_produtos}"
+        )
+        raise FileNotFoundError(
+            f"Arquivo FCD_PRODUTOS.csv não encontrado.\n\n"
+            f"Informações de debug:\n{debug_info}\n\n"
+            f"Verifique se o arquivo está na pasta 'data/' e foi commitado no repositório GitHub.\n"
+            f"Consulte DEPLOY.md para mais informações."
+        )
+    
+    if not os.path.exists(caminho_estoque):
+        raise FileNotFoundError(
+            f"Arquivo FCD_ESTOQUE.csv não encontrado.\n"
+            f"Caminho tentado: {caminho_estoque}\n"
+            f"Diretório do arquivo de produtos: {os.path.dirname(caminho_produtos)}\n\n"
+            f"Verifique se o arquivo está na pasta 'data/' e foi commitado no repositório GitHub.\n"
+            f"Consulte DEPLOY.md para mais informações."
+        )
     
     # Carregar CSVs
     df_produtos = pd.read_csv(caminho_produtos)

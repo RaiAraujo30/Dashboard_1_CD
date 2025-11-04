@@ -75,16 +75,29 @@ st.markdown("---")
 @st.cache_data
 def load_data():
     """Carrega os dados dos CSVs com cache"""
-    df = carregar_dados('data')
-    # Converter data_referencia para datetime se existir
-    if 'data_referencia' in df.columns:
-        df['data_referencia'] = pd.to_datetime(df['data_referencia'], errors='coerce')
-    return df
+    try:
+        df = carregar_dados('data')
+        # Converter data_referencia para datetime se existir
+        if 'data_referencia' in df.columns:
+            df['data_referencia'] = pd.to_datetime(df['data_referencia'], errors='coerce')
+        return df
+    except FileNotFoundError as e:
+        st.error(f"❌ **Erro ao carregar arquivos CSV:**\n\n{str(e)}\n\n"
+                "**Solução:**\n"
+                "1. Verifique se os arquivos `FCD_PRODUTOS.csv` e `FCD_ESTOQUE.csv` estão na pasta `data/`\n"
+                "2. Se estiver fazendo deploy no Streamlit Cloud, certifique-se de que os arquivos foram commitados no repositório GitHub\n"
+                "3. Verifique se a estrutura de pastas está correta")
+        st.stop()
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"❌ **Erro inesperado ao carregar os dados:**\n\n{str(e)}")
+        st.stop()
+        return pd.DataFrame()
 
 df_original = load_data()
 
 if df_original.empty:
-    st.error("❌ Não foi possível carregar os dados. Verifique se os arquivos CSV estão na pasta 'data'.")
+    st.error("❌ Não foi possível carregar os dados. Verifique os erros acima.")
     st.stop()
 
 # ============================================
