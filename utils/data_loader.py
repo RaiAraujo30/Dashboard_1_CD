@@ -19,51 +19,66 @@ def carregar_dados(base_path='data'):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)  # Volta um nível para a raiz do projeto
     
-    # Caminhos dos arquivos - tentar diferentes localizações
+    # Caminhos dos arquivos - tentar diferentes localizações e variações de nomes
     # Streamlit Cloud geralmente roda na raiz do projeto
-    caminhos_possiveis_produtos = [
-        os.path.join(project_root, base_path, 'FCD_PRODUTOS.csv'),  # Raiz do projeto/data/
-        os.path.join(base_path, 'FCD_PRODUTOS.csv'),  # Relativo ao diretório atual
-        'data/FCD_PRODUTOS.csv',  # Relativo simples
-        './data/FCD_PRODUTOS.csv',  # Relativo com ./
-        os.path.join(os.getcwd(), base_path, 'FCD_PRODUTOS.csv'),  # Diretório de trabalho atual
+    # Tentar diferentes variações de nomes (maiúsculas/minúsculas)
+    variacoes_produtos = ['FCD_PRODUTOS.csv', 'FCD_produtos.csv', 'fcd_produtos.csv']
+    variacoes_estoque = ['FCD_ESTOQUE.csv', 'FCD_estoque.csv', 'fcd_estoque.csv']
+    
+    caminhos_base = [
+        os.path.join(project_root, base_path),  # Raiz do projeto/data/
+        os.path.join(base_path),  # Relativo ao diretório atual
+        'data',  # Relativo simples
+        './data',  # Relativo com ./
+        os.path.join(os.getcwd(), base_path),  # Diretório de trabalho atual
     ]
     
     caminho_produtos = None
     caminho_estoque = None
     
-    # Encontrar o arquivo de produtos
-    for caminho in caminhos_possiveis_produtos:
-        if os.path.exists(caminho):
-            caminho_produtos = caminho
-            # Encontrar o arquivo de estoque no mesmo diretório
-            dir_estoque = os.path.dirname(caminho)
-            caminho_estoque = os.path.join(dir_estoque, 'FCD_ESTOQUE.csv')
-            if os.path.exists(caminho_estoque):
-                break
-            else:
-                caminho_produtos = None
-                caminho_estoque = None
+    # Encontrar os arquivos tentando diferentes combinações
+    for caminho_base in caminhos_base:
+        for variacao_produto in variacoes_produtos:
+            caminho_produto_teste = os.path.join(caminho_base, variacao_produto)
+            if os.path.exists(caminho_produto_teste):
+                # Encontrar o arquivo de estoque correspondente
+                for variacao_estoque in variacoes_estoque:
+                    caminho_estoque_teste = os.path.join(caminho_base, variacao_estoque)
+                    if os.path.exists(caminho_estoque_teste):
+                        caminho_produtos = caminho_produto_teste
+                        caminho_estoque = caminho_estoque_teste
+                        break
+                if caminho_produtos:
+                    break
+        if caminho_produtos:
+            break
     
-    # Se não encontrou, tentar com caminho relativo direto
-    if caminho_produtos is None:
-        caminho_produtos = os.path.join(base_path, 'FCD_PRODUTOS.csv')
-        caminho_estoque = os.path.join(base_path, 'FCD_ESTOQUE.csv')
-    
-    # Verificar se os arquivos existem
-    if not os.path.exists(caminho_produtos):
+    # Verificar se os arquivos foram encontrados
+    if not caminho_produtos or not os.path.exists(caminho_produtos):
         # Informações de debug
         debug_info = (
             f"Diretório atual: {os.getcwd()}\n"
             f"Diretório do script: {script_dir}\n"
             f"Raiz do projeto: {project_root}\n"
-            f"Caminhos tentados: {caminhos_possiveis_produtos}"
+            f"Listando arquivos em {os.path.join(project_root, base_path)}: "
         )
+        
+        # Tentar listar arquivos no diretório data para debug
+        try:
+            if os.path.exists(os.path.join(project_root, base_path)):
+                arquivos = os.listdir(os.path.join(project_root, base_path))
+                debug_info += f"{arquivos}\n"
+            else:
+                debug_info += f"Diretório não existe\n"
+        except Exception as e:
+            debug_info += f"Erro ao listar: {str(e)}\n"
+        
         raise FileNotFoundError(
-            f"Arquivo FCD_PRODUTOS.csv não encontrado.\n\n"
+            f"Arquivos CSV não encontrados.\n\n"
             f"Informações de debug:\n{debug_info}\n\n"
-            f"Verifique se o arquivo está na pasta 'data/' e foi commitado no repositório GitHub.\n"
-            f"Consulte DEPLOY.md para mais informações."
+            f"Nomes esperados: FCD_PRODUTOS.csv (ou FCD_produtos.csv) e FCD_ESTOQUE.csv (ou FCD_estoque.csv)\n"
+            f"Verifique se os arquivos estão na pasta 'data/' e foram commitados no repositório GitHub.\n"
+            f"Nota: Os nomes dos arquivos são case-sensitive no Linux (Streamlit Cloud)."
         )
     
     if not os.path.exists(caminho_estoque):
