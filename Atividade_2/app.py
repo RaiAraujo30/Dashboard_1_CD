@@ -189,16 +189,20 @@ def main():
         """
     )
 
-    # Verifica se os arquivos CSV existem na pasta
-    base_path = Path(".")
+    # Verifica se os arquivos CSV existem na pasta do próprio script
+    # Usar Path(__file__).resolve().parent garante que, mesmo se o
+    # Streamlit iniciar com um cwd diferente no deploy, os arquivos
+    # serão procurados na mesma pasta do `app.py`.
+    base_path = Path(__file__).resolve().parent
     caminho_vendas = base_path / "FCD_vendas.csv"
     caminho_produtos = base_path / "FCD_produtos.csv"
 
     if not caminho_vendas.exists() or not caminho_produtos.exists():
         st.error(
             "Arquivos CSV não encontrados.\n\n"
+            f"Procurados em:\n  {caminho_vendas}\n  {caminho_produtos}\n\n"
             "Certifique-se de que **FCD_vendas.csv** e **FCD_produtos.csv** "
-            "estão na mesma pasta deste arquivo .py."
+            "estão no mesmo diretório deste arquivo `app.py` e foram enviados ao repositório."
         )
         return
 
